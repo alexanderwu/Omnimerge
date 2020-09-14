@@ -4,40 +4,48 @@ Merge files into excel file
 Author: Alexander Wu
 Date: 9/13/20
 
-Requirements:
+## Usage
 
-* pandas: `pip install pandas`
+input.txt ignores empty lines and assumes the following format:
+
+```
+sheet_name
+file1.csv
+file2.csv
+
+sheet_name
+file1.csv
+file2.csv
+```
+
+## Requirements
+
+* pandas: `pip install --user pandas`
+* openpyxl: `pip install --user openpyxl`
 '''
 import pandas as pd
+
+# Export .xlsx without bold headers
 import pandas.io.formats.excel
 pandas.io.formats.excel.ExcelFormatter.header_style = None
 
 INPUT_FILE = 'input.txt'
 OUTPUT_PATH = 'merged.xlsx'
 
-input_df = pd.read_csv('input.txt', header=None)
-input_list = input_df[0].values
+with open(INPUT_FILE, 'r') as f:
+    input_lines = f.readlines()
 
-dir1_file1_df = pd.read_csv(input_list[0])
-dir1_file2_df = pd.read_csv(input_list[1])
-dir2_file1_df = pd.read_csv(input_list[2])
-dir2_file2_df = pd.read_csv(input_list[3])
-dir3_file1_df = pd.read_csv(input_list[4])
-dir3_file2_df = pd.read_csv(input_list[5])
-dir4_file1_df = pd.read_csv(input_list[6])
-dir4_file2_df = pd.read_csv(input_list[7])
+input_list = [x.strip() for x in input_lines if x.strip()]
 
-dir1_file1_df[''] = None
-sheet1_df = pd.concat([dir1_file1_df, dir1_file2_df], axis=1)
-dir2_file1_df[''] = None
-sheet2_df = pd.concat([dir2_file1_df, dir2_file2_df], axis=1)
-dir3_file1_df[''] = None
-sheet3_df = pd.concat([dir3_file1_df, dir3_file2_df], axis=1)
-dir4_file1_df[''] = None
-sheet4_df = pd.concat([dir4_file1_df, dir4_file2_df], axis=1)
+sheet_names = [x for i, x in enumerate(input_list) if i % 3 == 0]
+file1_names = [x for i, x in enumerate(input_list) if i % 3 == 1]
+file2_names = [x for i, x in enumerate(input_list) if i % 3 == 2]
 
 with pd.ExcelWriter(OUTPUT_PATH) as writer:
-    sheet1_df.to_excel(writer, sheet_name='Sheet1', index=False)
-    sheet2_df.to_excel(writer, sheet_name='Sheet2', index=False)
-    sheet3_df.to_excel(writer, sheet_name='Sheet3', index=False)
-    sheet4_df.to_excel(writer, sheet_name='Sheet4', index=False)
+    for sheet_name, file1, file2 in zip(sheet_names, file1_names, file2_names):
+        print(sheet_name, file1, file2)
+        file1_df = pd.read_csv(file1)
+        file2_df = pd.read_csv(file2)
+        file1_df[''] = None
+        sheet_df = pd.concat([file1_df, file2_df], axis=1)
+        sheet_df.to_excel(writer, sheet_name=sheet_name, index=False)
